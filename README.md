@@ -17,7 +17,7 @@ Bot otomatis untuk trading di XionMarkets Testnet menggunakan Selenium.
 ### 1️⃣ **Clone the Repository**
 Open a terminal or CMD and run the following commands:
 ```sh
-git clone https://github.com/USERNAME/xionmarkets-bot.git
+git clone https://github.com/bangudiku/xionmarkets-bot.git
 cd xionmarkets-bot
 ```
 **Replace `USERNAME` with your GitHub username!**
