@@ -59,7 +59,7 @@ Edit the `config.json` file with your account data:
 ## 🚀 Running the Bot
 Once configured, run the bot using:
 ```sh
-python bot.py
+python xionmarkets.py
 ```
 The bot will automatically:
 1. Log in to XionMarkets.
@@ -97,4 +97,6 @@ If you still have issues, open an **Issue** on GitHub! 🎯
 ## 📜 License
 This bot is open-source and available for anyone to use.
 
-💡 **Feel free to contribute and help improve this bot!** 🚀
+**DWYOR!!! THIS IS FOR EDUCATION ONLY** 
+**Buy Coffee SOL fXTzeQ9xm4nENv5gR4V5LcCMHQnexrcqnCoye1Jb6tV** 
+
