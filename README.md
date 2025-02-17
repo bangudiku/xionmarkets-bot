@@ -2,7 +2,7 @@
 
 ## MAKE SURE YOUR INTERNET IS GOOD!
 
-Bot otomatis untuk trading di XionMarkets Testnet menggunakan Selenium.
+Bot otomatis untuk trading di XionMarkets Testnet menggunakan PLAYWRIGHT!.
 
 ## 📌 Features
 - **Automatic Login**: Uses local storage data.
