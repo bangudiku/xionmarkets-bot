@@ -1,5 +1,6 @@
 import json
 import asyncio
+import random
 from playwright.async_api import async_playwright
 
 # 🔧 **Konfigurasi**
@@ -36,36 +37,41 @@ async def main():
         # 🔄 **Loop Auto Buy**
         while True:
             try:
-                # 🏦 **Ambil Saldo**
-                balance_text = await page.inner_text('xpath=//*[@id="trade"]/div[3]/div/span[2]')
-                balance = float(balance_text.replace(',', ''))
+                # 🏪 **Klik Menu Buy**
+                await page.wait_for_selector('button.amm-buy.mx-2', timeout=60000)  # Tunggu hingga tombol Buy muncul
+                await page.click('button.amm-buy.mx-2')  # Klik tombol Menu Buy
+                await asyncio.sleep(2)
+
+                # 🌀 **Klik NO**
+                await page.wait_for_selector('button.outcomes.no.ms-1', timeout=60000)  # Tunggu hingga tombol NO muncul
+                await page.click('button.outcomes.no.ms-1')  # Pilih "No"
+                await asyncio.sleep(2)
+
+                # 🏦 **Ambil Saldo** setelah memilih NO
+                balance_text = await page.inner_text('div.d-flex.align-items-center.justify-content-end > span.usdc-balance:last-child')  # Ambil saldo dari halaman
+                balance = float(balance_text.replace(',', '').strip())  # Hapus koma dan spasi jika ada, lalu konversi ke float
                 print(f"💰 Saldo saat ini: {balance} USDC")
 
+
                 if balance < 1:
-                    print("❌ Saldo tidak cukup! Tunggu 30 detik...")
+                    print("❌ Saldo tidak cukup! Tunggu 30 detik...") 
                     await asyncio.sleep(30)
                     continue
 
-                # 📥 **Masukkan Jumlah Pembelian**
-                await page.click('xpath=//*[@id="buy-input"]')
-                await page.fill('xpath=//*[@id="buy-input"]', "1")
+                # 📥 **Masukkan Jumlah Pembelian (1 atau 2)**
+                buy_amount = random.choice([1, 2])  # Pilih angka secara acak (1 atau 2)
+                await page.fill('input#buy-input', str(buy_amount))  # Isi input buy dengan jumlah yang dipilih
+                print(f"📥 Membeli {buy_amount} share(s)...")
 
-                # 🛒 **Klik Buy**
-                await page.click('xpath=//*[@id="trade"]/div[6]/button')
+                # 🛒 **Klik Tombol Eksekusi Buy**
+                await page.click('button[type="submit"].trade-button')  # Tombol Eksekusi Buy
                 await asyncio.sleep(2)
 
-                # ✅ **Konfirmasi Transaksi**
-                await page.click('xpath=//*[@id="root"]/main/div[1]/div/div[2]/div[3]/button')
+                # ✅ **Klik Tombol Confirm Action**
+                await page.click('button[type="button"].trade-button')  # Tombol Confirm Action
                 await asyncio.sleep(2)
 
-                # ❌ **Tutup Pop-up jika ada**
-                try:
-                    await page.click('xpath=//*[@id="root"]/main/div[1]/div/div[1]/div[2]/img', timeout=5000)
-                    print("✅ Pop-up tertutup!")
-                except:
-                    print("ℹ️ Tidak ada pop-up, lanjutkan proses...")
-
-                # ⏳ **Skip Menunggu Konfirmasi, Langsung Cek Saldo Lagi**
+                # ⏳ **Tunggu Konfirmasi Selesai**
                 print(f"✅ Order berhasil dieksekusi! Tunggu {DELAY_AFTER_SUCCESS} detik sebelum cek saldo lagi...")
                 await asyncio.sleep(DELAY_AFTER_SUCCESS)
 
@@ -78,3 +84,4 @@ async def main():
 
 # 🚀 **Jalankan Kode**
 asyncio.run(main())
+
