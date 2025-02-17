@@ -26,8 +26,11 @@ cd xionmarkets-bot
 Make sure you have **Python** installed. If not, download it from [python.org](https://www.python.org/downloads/). Then, run the following command:
 ```sh
 pip install -r requirements.txt
-python -m pip install -r requirements.txt
-
+```
+and
+```sh
+pip install playwright
+python -m playwright install
 ```
 
 ### 3️⃣ **Configure Your Account**
