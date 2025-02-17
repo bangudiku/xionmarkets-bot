@@ -52,6 +52,7 @@ Edit the `config.json` file with your account data:
 ```
 
 > **How to retrieve local storage data:**
+> Make sure you already login
 > 1. Open [XionMarkets Testnet](https://testnet.xionmarkets.com) in Chrome.
 > 2. Press `F12` to open **Developer Tools**.
   3. Go to the **Console** tab and enter the following command:
@@ -64,7 +65,10 @@ Edit the `config.json` file with your account data:
 ## 🚀 Running the Bot
 Once configured, run the bot using:
 ```sh
-python xionmarkets.py
+python buy.py
+```
+```sh
+python sell.py
 ```
 The bot will automatically:
 1. Log in to XionMarkets.
@@ -103,5 +107,6 @@ If you still have issues, open an **Issue** on GitHub! 🎯
 This bot is open-source and available for anyone to use.
 
 **DWYOR!!! THIS IS FOR EDUCATION ONLY** 
-**Buy Coffee SOL fXTzeQ9xm4nENv5gR4V5LcCMHQnexrcqnCoye1Jb6tV** 
+- Buy Coffee SOL fXTzeQ9xm4nENv5gR4V5LcCMHQnexrcqnCoye1Jb6tV
+- [Telegram](https://t.me/dwiputraofficial)
 
