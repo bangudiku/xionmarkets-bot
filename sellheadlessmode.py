@@ -1,85 +1,97 @@
-import json
 import asyncio
+import json
 import random
+import datetime
 from playwright.async_api import async_playwright
+from colorama import Fore, Style
 
-# 🔧 **Konfigurasi**
+# Konfigurasi
 MARKET_URL = "https://testnet.xionmarkets.com/market/xion1x89jut7kersq6nws063v2wdnl5l468j0vrpzxh0d7ezv0f9yn4qshyatss/1"
-DELAY_AFTER_SUCCESS = 5  # Tunggu sebentar setelah transaksi sebelum cek saldo lagi
+DELAY_AFTER_SUCCESS = 5
+MAX_RETRIES = 3  # Jika gagal 3x, restart browser
 
-async def main():
-    async with async_playwright() as p:
-        # 🌐 **Buka Browser dalam mode headless**
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
+def timestamp():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # 🔗 **Buka XionMarkets**
-        await page.goto("https://testnet.xionmarkets.com")
-        await page.wait_for_selector("body", timeout=10000)
-        print("✅ Halaman utama berhasil dimuat!")
-
-        # 🔑 **Muatan Local Storage untuk Login**
-        with open("config.json", "r") as f:
-            local_storage_data = json.load(f)
-
-        for key, value in local_storage_data.items():
-            await page.evaluate(f"window.localStorage.setItem('{key}', '{value}');")
-
-        print("✅ Local Storage berhasil dimasukkan!")
-        await page.reload()
-        
-        # 🏩 **Masuk ke Halaman Market**
-        await page.goto(MARKET_URL)
-        await page.wait_for_selector("#trade", timeout=15000)
-        print("✅ Halaman market berhasil dimuat!")
-
-        # 🔄 **Loop Auto Sell**
-        while True:
+async def run_market():
+    while True:  # Loop utama agar tidak berhenti
+        retry_count = 0
+        while retry_count < MAX_RETRIES:
             try:
-                # 🏩 **Klik Menu Sell**
-                await page.wait_for_selector('button.amm-sell.mx-2', timeout=60000)  # Tunggu hingga tombol Sell muncul
-                await page.click('button.amm-sell.mx-2')  # Klik tombol Menu Sell
-                await asyncio.sleep(2)
+                async with async_playwright() as p:
+                    browser = await p.chromium.launch(
+                        headless=True, 
+                        args=["--disable-gpu", "--no-sandbox"]
+                    )
+                    context = await browser.new_context()
 
-                # 🛀 **Klik NO**
-                await page.wait_for_selector('button.outcomes.no.ms-1', timeout=60000)  # Tunggu hingga tombol NO muncul
-                await page.click('button.outcomes.no.ms-1')  # Pilih "No"
-                await asyncio.sleep(2)
+                    # Load Local Storage lebih aman
+                    with open("config.json", "r") as f:
+                        local_storage_data = json.load(f)
 
-                # 🏦 **Ambil Saldo** setelah memilih NO
-                balance_text = await page.inner_text('span.usdc-balance')  # Ambil saldo dari halaman
-                balance = float(balance_text.replace(' share(s)', '').replace(',', ''))
-                print(f"💰 Saldo saat ini: {balance} share(s)")
+                    local_storage_script = f"""
+                    for (let key in {json.dumps(local_storage_data)}) {{
+                        localStorage.setItem(key, {json.dumps(local_storage_data)}[key]);
+                    }}
+                    """
+                    await context.add_init_script(local_storage_script)
 
-                if balance < 1:
-                    print("❌ Saldo tidak cukup! Tunggu 30 detik...")
-                    await asyncio.sleep(30)
-                    continue
+                    page = await context.new_page()
 
-                # 📥 **Masukkan Jumlah Penjualan (1 atau 2)**
-                sell_amount = random.choice([1, 2])  # Pilih angka secara acak (1 atau 2)
-                await page.fill('input#sell-input', str(sell_amount))  # Isi input sell dengan jumlah yang dipilih
-                print(f"📥 Menjual {sell_amount} share(s)...")
+                    print(Fore.GREEN + f"{timestamp()} Memulai..." + Style.RESET_ALL)
 
-                # 🛒 **Klik Tombol Eksekusi Sell**
-                await page.click('button.trade-button')  # Tombol Eksekusi Sell
-                await asyncio.sleep(2)
+                    # Buka Market
+                    await page.goto(MARKET_URL)
+                    await page.wait_for_selector("#trade", timeout=15000)
+                    print(Fore.CYAN + f"{timestamp()} Halaman market siap!" + Style.RESET_ALL)
 
-                # ✅ **Klik Tombol Confirm Action**
-                await page.click('button.trade-button')  # Tombol Confirm Action
-                await asyncio.sleep(2)
+                    # Loop Auto Sell
+                    while True:
+                        try:
+                            await page.wait_for_selector('button.amm-sell.mx-2', timeout=60000)
+                            await page.click('button.amm-sell.mx-2')
+                            await asyncio.sleep(2)
 
-                # ⏳ **Tunggu Konfirmasi Selesai**
-                print(f"✅ Order berhasil dieksekusi! Tunggu {DELAY_AFTER_SUCCESS} detik sebelum cek saldo lagi...")
-                await asyncio.sleep(DELAY_AFTER_SUCCESS)
+                            await page.wait_for_selector('button.outcomes.no.ms-1', timeout=60000)
+                            await page.click('button.outcomes.no.ms-1')
+                            await asyncio.sleep(2)
+
+                            balance_text = await page.inner_text('span.usdc-balance')
+                            balance = float(balance_text.replace(' share(s)', '').replace(',', ''))
+                            print(Fore.YELLOW + f"{timestamp()} Saldo: {balance} USDC" + Style.RESET_ALL)
+
+                            if balance < 1:
+                                print(Fore.RED + f"{timestamp()} Saldo kurang! Tunggu 30 detik..." + Style.RESET_ALL)
+                                await asyncio.sleep(30)
+                                continue
+
+                            sell_amount = random.choice([0.1, 0.2])
+                            print(Fore.BLUE + f"{timestamp()} Menjual {sell_amount} share(s)..." + Style.RESET_ALL)
+
+                            await page.fill('input#sell-input', str(sell_amount))
+                            await page.click('button.trade-button')
+                            await asyncio.sleep(2)
+
+                            await page.click('button.trade-button')
+                            await asyncio.sleep(2)
+
+                            print(Fore.GREEN + f"{timestamp()} Order sukses! Tunggu {DELAY_AFTER_SUCCESS} detik..." + Style.RESET_ALL)
+                            await asyncio.sleep(DELAY_AFTER_SUCCESS)
+
+                        except Exception as e:
+                            print(Fore.RED + f"{timestamp()} ERROR di transaksi: {e}" + Style.RESET_ALL)
+                            print(Fore.CYAN + f"{timestamp()} Reloading halaman..." + Style.RESET_ALL)
+                            await page.reload()
+                            await asyncio.sleep(5)
 
             except Exception as e:
-                print(f"❌ Error dalam loop utama: {e}")
-                await asyncio.sleep(5)
+                print(Fore.RED + f"{timestamp()} ERROR BESAR: {e}" + Style.RESET_ALL)
+                retry_count += 1
+                print(Fore.YELLOW + f"{timestamp()} Restart Browser (Percobaan {retry_count}/{MAX_RETRIES})..." + Style.RESET_ALL)
+                await asyncio.sleep(10)
 
-        # ❌ **Tutup Browser**
-        await browser.close()
+        print(Fore.RED + f"{timestamp()} Gagal {MAX_RETRIES}x, restart total program..." + Style.RESET_ALL)
+        await asyncio.sleep(10)  # Tunggu sebentar sebelum restart
 
-# 🚀 **Jalankan Kode**
-asyncio.run(main())
+# Jalankan Program
+asyncio.run(run_market())
