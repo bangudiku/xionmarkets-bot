@@ -71,9 +71,15 @@ async def main():
                 await page.click("button.outcomes.no.ms-1")  
                 await asyncio.sleep(2)
 
-                balance_text = await page.inner_text("div.d-flex.align-items-center.justify-content-end > span.usdc-balance:last-child")
-                balance = float(balance_text.replace(",", "").strip())  
-                print(f"💰 Saldo saat ini: {balance} USDC")
+                # 🆕 **Ambil balance berdasarkan jenis transaksi**
+                if transaction_type == "buy":
+                    balance_text = await page.inner_text("div.d-flex.align-items-center.justify-content-end > span.usdc-balance:last-child")
+                    balance = float(balance_text.replace(",", "").strip())  # 🔹 USDC Balance
+                    print(f"💰 Saldo saat ini: {balance} USDC")
+                else:  # Sell
+                    balance_text = await page.inner_text('span.usdc-balance')  # 🔹 Share Balance
+                    balance = float(balance_text.replace(' share(s)', '').replace(',', ''))
+                    print(f"💰 Saldo saat ini: {balance} share(s)")
 
                 if balance < 1:
                     print("❌ Saldo tidak cukup! Tunggu 30 detik...") 
