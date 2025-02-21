@@ -35,6 +35,12 @@ async def main():
         if transaction_type in ["buy", "sell"]:
             break
         print("❌ Pilihan harus 'buy' atau 'sell'!")
+    
+    while True:
+        select_shares = input("Select shares (yes/no): ").strip().lower()
+        if select_shares in ["yes", "no"]:
+            break
+        print("❌ Pilihan harus 'yes' atau 'no'!")
 
     amount_input = input("Masukkan jumlah (atau ketik 'random' untuk nilai acak 1-30): ").strip()
 
@@ -67,30 +73,30 @@ async def main():
                 await page.click(action_selector)
                 await asyncio.sleep(2)
 
-                await page.wait_for_selector("button.outcomes.no.ms-1", timeout=60000)
-                await page.click("button.outcomes.no.ms-1")  
+                shares_selector = "button.outcomes.yes.me-1" if select_shares == "yes" else "button.outcomes.no.ms-1"
+                await page.wait_for_selector(shares_selector, timeout=60000)
+                await page.click(shares_selector)  
                 await asyncio.sleep(2)
 
-                # 🆕 **Ambil balance berdasarkan jenis transaksi**
                 if transaction_type == "buy":
                     balance_text = await page.inner_text("div.d-flex.align-items-center.justify-content-end > span.usdc-balance:last-child")
-                    balance = float(balance_text.replace(",", "").strip())  # 🔹 USDC Balance
+                    balance = float(balance_text.replace(",", "").strip())
                     print(f"💰 Saldo saat ini: {balance} USDC")
-                else:  # Sell
-                    balance_text = await page.inner_text('span.usdc-balance')  # 🔹 Share Balance
+                else:
+                    await page.wait_for_selector('span.usdc-balance', timeout=5000)
+                    balance_text = await page.inner_text('span.usdc-balance')
                     balance = float(balance_text.replace(' share(s)', '').replace(',', ''))
                     print(f"💰 Saldo saat ini: {balance} share(s)")
 
-                if balance < 1:
+                if amount_input.lower() == "random":
+                    amount = random.randint(1, 30)
+                else:
+                    amount = int(amount_input)
+
+                if balance < amount:
                     print("❌ Saldo tidak cukup! Tunggu 30 detik...") 
                     await asyncio.sleep(30)
                     continue
-
-                # 🆕 **Pastikan `amount` di-random setiap loop**
-                if amount_input.lower() == "random":
-                    amount = random.randint(1, 30)  # 🔄 Generate angka baru setiap loop
-                else:
-                    amount = int(amount_input)
 
                 input_selector = "input#buy-input" if transaction_type == "buy" else "input#sell-input"
                 await page.fill(input_selector, str(amount))  
