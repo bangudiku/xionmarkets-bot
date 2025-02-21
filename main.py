@@ -124,10 +124,16 @@ async def main():
                 await page.click(action_selector)
                 await asyncio.sleep(2)
 
-                # Cek saldo sebelum transaksi
-                balance_text = await page.inner_text("div.d-flex.align-items-center.justify-content-end > span.usdc-balance:last-child")
+                # Cek saldo berdasarkan transaksi
+                if transaction_type == "buy":
+                    balance_text = await page.inner_text("span.usdc-balance:last-child")
+                    unit = "USDC"
+                else:
+                    balance_text = await page.inner_text("span.share-balance:last-child")
+                    unit = "share(s)"
+
                 balance = float(balance_text.replace(",", "").strip())  
-                print(Fore.GREEN + f"💰 Saldo saat ini: {balance} USDC")
+                print(Fore.GREEN + f"💰 Saldo saat ini: {balance} {unit}")
 
                 if balance < amount:
                     print(Fore.RED + "❌ Saldo tidak cukup! Tunggu 30 detik...") 
@@ -138,15 +144,13 @@ async def main():
                 await page.fill(input_selector, str(amount))  
                 print(Fore.BLUE + f"📥 Melakukan {transaction_type} {amount} share(s)...")
 
-                # Klik tombol transaksi
                 await page.click("button[type='submit'].trade-button")  
                 await asyncio.sleep(2)
 
-                # Klik konfirmasi transaksi
                 await page.click("button[type='button'].trade-button")  
                 await asyncio.sleep(2)
 
-                print(Fore.GREEN + f"✅ {transaction_type.capitalize()} berhasil di '{selected_market_name}'! Tunggu {DELAY_AFTER_SUCCESS} detik sebelum cek saldo lagi...")
+                print(Fore.GREEN + f"✅ {transaction_type.capitalize()} berhasil di '{selected_market_name}'!")
                 await asyncio.sleep(DELAY_AFTER_SUCCESS)
 
             except Exception as e:
